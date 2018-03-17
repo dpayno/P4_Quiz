@@ -1,187 +1,37 @@
 
-const fs = require("fs");
+const Sequelize = require('sequelize');
 
-//	Nombre del fichero donde se guardan las preguntas
-const DB_FILENAME = "quizzes.json";
+const sequelize = new Sequelize("sqlite:quizzes.sqlite", {logging: false});
 
-
-// Modelo de datos
-//
-// En esta variable mantenemos los quizzes existentes
-// Es un array de objetos, donde los objetos tienen como atributos question
-// answer
-
-let quizzes = [
-
-{
-	question: "Capital de Italia",
-	answer: "Roma"
-},
-{
-	question: "Capital de Francia",
-	answer: "París"
-},
-{
-	question: "Capital de España",
-	answer: "Madrid"
-},
-{
-	question: "Capital de Portugal",
-	answer: "Lisboa"
-},
-
-];
-
-
-
-/**
-*	Método que carga el contenido del fichero DB_FILENAME en 
-*	variable quizzes en formato JSON.
-*	La primera vez que se ejecuta, el fichero no existe, y se producirá
-*	el error ENOENT. En este caso se salva el contenido inicial almacenado en quizzes
-*
-*/
-const load = () => {
-
-	fs.readFile(DB_FILENAME, (err,data) => {
-		if (err){
-
-			//La primera vez no existe el fichero
-			if (err.code === "ENOENT"){
-				save(); //valores iniciales
-				return;
-			}
-			throw err;
-		}
-		let json = JSON.parse(data);
-
-		if(json){
-			quizzes = json;
-		}
-	});
-};
-
-
-
-/**
-*	Guarda las preguntas en el fichero
-*
-*	Guarda el valor de los quizzes en formato JSON
-*	Si se produce algún error, se lanza una excepción
-*/
-const save = () => {
-
-	fs.writeFile(DB_FILENAME,
-		JSON.stringify(quizzes),
-		err => {
-			if (err) throw err;
-		});
-};
-
-
-//
-/**
-*	Devuelve el número total de preguntas existentes
-*
-*	@returns {number} número total de preguntas existentes
-*/
-exports.count = () => quizzes.length;
-
-
-
-
-/**
-*	Añade un nuevo quiz
-* 
-*	@param question String con la pregunta
-*	@param question String con la respuesta
-*/
-exports.add = (question, answer) => {
-	quizzes.push({
-		question: (question || "").trim(),
-		answer: (answer || "").trim()
-	});
-	save();
-};
-
-
-
-/**
-*	Actualiza el quiz situado en la posición index
-*
-*
-* @param id 		Clave que identifica el quiz
-* @param question 	pregunta
-* @param answer		respuesta
-*/	
-exports.update = (id, question, answer) => {
-
-	const quiz = quizzes[id];
-	if(typeof quiz === "undefined"){
-		throw new Error(`El valor del parámetro id no es válido`);
+sequelize.define('quiz', {
+	question: {
+		type: Sequelize.STRING,
+		unique: {msg: "Ya existe esta pregunta"},
+		validate: {notEmpty: {msg: "La pregunta no puede estar vacía"}}
+	}, 
+	answer: {
+		type: Sequelize.STRING,
+		validate: {notEmpty: {msg: "La respuesta no puede estar vacía"}}
 	}
+});
 
 
-	quizzes.splice(id, 1, {
-		question: (question || "").trim(),
-		answer: (answer || "").trim()
-	});
-	save();
-};
+sequelize.sync()
+.then(() => sequelize.models.quiz.count())
+.then(count => {
+	if(!count){
+		return sequelize.models.quiz.bulkCreate([
+			{ question: "Capital de Italia",	answer: "Roma"},
+			{ question: "Capital de Francia",	answer: "París"},
+			{ question: "Capital de España",	answer: "Madrid"},
+			{ question: "Capital de Portugal",	answer: "Lisboa"}
 
-
-
-/**
-*	Devuelve todos los quizes existentes
-*
-*	Devuelve un  clon del valor guardado en la variable quizzes, es decir, devuelve un
-*	objeto nuevo con todas las preguntas existentes. Para clonar quizzes se usa stringify + parse
-*
-* @returns	{any}
-*/	
-exports.getAll = () => JSON.parse(JSON.stringify(quizzes));
-
-
-
-/**
-*	Devuelve un clon del quiz almacenado en la posición dada
-*
-*	Para clonar quizzes se usa stringify + parse
-*
-* @param identificaClave que identifica al quiz
-*
-* @returns	{question, answer} Devuelve el objeto quiz de la posición dada
-*/
-exports.getByIndex = id => {
-	const quiz = quizzes[id];
-	if (typeof quiz === "undefined"){
-		throw new Error(`El valor del parámetro id no es válido`);
+			]);
 	}
-	return JSON.parse(JSON.stringify(quiz));
-};
+}) 
+.catch(error => {
+	console.log(error);
+});
 
-
-
-
-/**
-*	Elimina el quiz situado en la posicion dada
-*
-* @param id clave que identifica el quiz a borrar
-*/
-exports.deleteByIndex = id => {
-
-const quiz = quizzes[id];
-if (typeof quiz === "undefined"){
-		throw new Error(`El valor del parámetro id no es válido`);
-	}
-quizzes.splice(id, 1);
-save();
-};
-
-
-//Carga los quizzes almacenados en el fichero
-load();
-
-
-
+module.exports = sequelize;
 
