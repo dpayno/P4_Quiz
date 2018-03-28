@@ -115,7 +115,7 @@ exports.listCmd = (socket, rl) => {
 *	@param id Parametro con el índice a validar
 */
 
-const validateId = (socket, id) => {
+const validateId = (id) => {
 
 	return new Sequelize.Promise((resolve, reject) => {
 		if(typeof id === "undefined"){
