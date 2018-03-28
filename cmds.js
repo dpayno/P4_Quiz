@@ -325,7 +325,7 @@ exports.editCmd = (socket, rl, id) => {
 */
 exports.creditsCmd = (socket, rl) => {
 	log(socket, 'Autor de la práctica:');
-	(socket, 'Daniel Payno Zarceño', 'green');
+	log(socket, 'Daniel Payno Zarceño', 'green');
 	rl.prompt();
 
 };
